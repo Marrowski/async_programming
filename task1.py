@@ -55,17 +55,17 @@ def write_to_db(title: str, body: str):
 
 #За допомогою aiohttp
 
-logging.basicConfig(filename='log_b.txt', level=logging.INFO, filemode='w', format='%(asctime)s %(levelname)s %(message)s', encoding='utf-8')
+file_handler2 = logging.FileHandler('log_b.txt', encoding='utf-8')
+file_handler2.setLevel(logging.INFO)
 
-async def get_url(session, url):
-    async with session.get(url) as response:
-        return await response.text()
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+logger.addHandler(file_handler2)
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        html = await get_url(session, 'https://jsonplaceholder.typicode.com/posts')
-        print(html)
-        logging.info(f'Початок запиту до ресурсу: {html}')
-        logging.info(f'Отримання статус коду 200 {response.status_code}')
+        async with session.get('https://jsonplaceholder.typicode.com/posts') as resp:
+            print(f'Status code: {resp.status}')
 
+            html_text = await resp.text()
+            logging.info(f'Отримання доступу до ресурсу: {html_text}')
 asyncio.run(main())
