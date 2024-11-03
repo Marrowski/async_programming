@@ -1,6 +1,3 @@
-from gettext import textdomain
-from os import write
-
 import requests
 import sqlite3
 import asyncio
@@ -8,8 +5,21 @@ import logging
 import aiohttp
 
 
-logger = logging.getLogger('logs')
-logging.basicConfig(filename='log_a.txt', level=logging.INFO, filemode='w', format='%(asctime)s %(levelname)s %(message)s', encoding='utf-8')
+logger_a = logging.getLogger('log_a')
+logger_a.setLevel(logging.INFO)
+
+file_handler = logging.FileHandler('log_a.txt', encoding='utf-8')
+file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+
+file_handler_b = logging.FileHandler('log_b.txt', encoding='utf-8')
+file_handler_b.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+
+logger_a.addHandler(file_handler)
+
+logger_b = logging.getLogger('log_b')
+logger_b.setLevel(logging.INFO)
+
+logger_b.addHandler(file_handler_b)
 
 connection = sqlite3.connect('content.db')
 cursor = connection.cursor()
@@ -31,9 +41,9 @@ def get_data():
     global response
     response = requests.get('https://jsonplaceholder.typicode.com/posts')
     print(f'Status code: {response.status_code}')
-    logging.info(f'Початок запиту до ресурсу {response}')
+    logger_a.info(f'Початок запиту до ресурсу {response}')
     if response.status_code == 200:
-        logging.info(f'Отримання статус коду 200:{response.status_code}')
+        logger_a.info(f'Отримання статус коду 200:{response.status_code}')
     else:
         print('З`єднання не встановлене. Спробуйте ще раз')
     items = response.json()
@@ -55,17 +65,15 @@ def write_to_db(title: str, body: str):
 
 #За допомогою aiohttp
 
-file_handler2 = logging.FileHandler('log_b.txt', encoding='utf-8')
-file_handler2.setLevel(logging.INFO)
-
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-logger.addHandler(file_handler2)
-
 async def main():
     async with aiohttp.ClientSession() as session:
         async with session.get('https://jsonplaceholder.typicode.com/posts') as resp:
-            print(f'Status code: {resp.status}')
+            logger_b.info(f' Отримання статус коду {resp.status}')
+            if resp.status == 200:
+                items = await resp.json()
+                for inf in items:
+                    if inf['id'] <= 5:
+                        logger_b.info(f'Дані:{inf}')
+                        write_to_db(inf['title'],inf['body'])
 
-            html_text = await resp.text()
-            logging.info(f'Отримання доступу до ресурсу: {html_text}')
 asyncio.run(main())
